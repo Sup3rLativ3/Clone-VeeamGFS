@@ -18,8 +18,16 @@
 #>
 
 param ( [string]$HomeDrive = 'K:',
-		[string]$OffsiteDrive = 'O:'
+		[string]$OffsiteDrive = 'O:',
+        [string]$EventSource = "Veeam GFS Script"
 )
+
+# This checks to see if the event viewer source exists and if not it will create it.
+$EventSourceExists = Get-EventLog -list | Where-Object {$_.logdisplayname -eq "$EventSource"} 
+IF (!($EventSourceExists)) 
+    {
+        New-EventLog -LogName Application -Source $EventSource
+    }
 
 # This pulls the process id of the Veeam session. From that it gets the job command used to start the job and then uses the GUID of the job to get the name of the job
 # Credit to /u/poulboren from reddit
@@ -39,3 +47,10 @@ If (!($Path))
 
 #This performs the mirror. If it hits an error it will retry twice with 5 seconds between retries.
 Robocopy "$HomeDrive\Veeam\Backups\GFS\$JobName" "$OffsiteDrive\Veeam_Offsite\$JobName" /MIR /W:5 /R:2
+
+# This will check the exit code from RoboCopy and if it was not successful, write an error to event viewer under the application directory.
+# http://windowsitpro.com/powershell/q-capturing-robocopy-error-codes-powershell
+IF (!($LastExitCode -eq 0))
+    {
+         Write-EventLog -LogName Application -Source $EventSource -EntryType Error -EventId 101 -Message "The clone to the offsite has failed with error code $LastErrorCode"
+    }
