@@ -59,9 +59,17 @@ If (!($Path))
 #This performs the mirror. If it hits an error it will retry twice with 5 seconds between retries.
 Robocopy "$HomeDrive\Veeam\Backups\GFS\$JobName" "$OffsiteDrive\Veeam_Offsite\$JobName" /MIR /W:5 /R:2
 
-# This will check the exit code from RoboCopy and if it was not successful, write an error to event viewer under the application directory.
-# http://windowsitpro.com/powershell/q-capturing-robocopy-error-codes-powershell
-IF (!($LastExitCode -eq 0))
-    {
-         Write-EventLog -LogName Application -Source $EventSource -EntryType Error -EventId 101 -Message "The clone to the offsite has failed with error code $LastErrorCode"
-    }
+# This will check the exit code from RoboCopy and create an event viewer entry describing the result.
+# http://www.bartsp34ks.nl/scripting/powershell/powershell-get-robocopy-exit-codes/
+IF (($LASTEXITCODE -eq 0))
+{
+    Write-EventLog -LogName Application -Source $EventSource -EventId 100 -Message "The clone to the offsite has been successful. $LastErrorCode"               
+}
+ELSEIF (($LASTEXITCODE -gt 0) -and ($LASTEXITCODE -lt 16))
+{
+    Write-EventLog -LogName Application -Source $EventSource -EntryType Warning -EventId 101 -Message "The clone to the offsite has completed with warnings. You should review this to ensure you're backups are consistent.  $LastErrorCode"
+}
+ELSE ($LASTEXITCODE -eq 16)
+{
+    Write-EventLog -LogName Application -Source $EventSource -EntryType Error -EventId 102 -Message "The clone to the offsite has failed with error code $LastErrorCode"
+}
