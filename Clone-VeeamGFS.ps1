@@ -21,21 +21,21 @@ param ( [string]$HomeDrive = 'K:',
 		[string]$OffsiteDrive = 'O:'
 )
 
-# This bit pulls the process id of the Veeam session. From that it gets the job command used to start the job and then uses the GUID of the job to get the name of the job
+# This pulls the process id of the Veeam session. From that it gets the job command used to start the job and then uses the GUID of the job to get the name of the job
 # Credit to /u/poulboren from reddit
 # https://www.reddit.com/r/Veeam/comments/6aaxll/veeam_ps_get_name_of_current_job/dhd5x4j/
 # https://github.com/poulpreben/powershell/blob/master/VeeamPrnxCacheControl.ps1#L35
 
-$parentpid = (Get-WmiObject Win32_Process -Filter "processid='$pid'").parentprocessid.ToString()
-$parentcmd = (Get-WmiObject Win32_Process -Filter "processid='$parentpid'").CommandLine
-$veeamjob = Get-VBRJob | ?{$parentcmd -like "*"+$_.Id.ToString()+"*"}
-$jobname=$veeamjob.name
+$ParentPID = (Get-WmiObject Win32_Process -Filter "ProcessID='$PID'").parentprocessid.ToString()
+$ParentCMD = (Get-WmiObject Win32_Process -Filter "ProcessID='$ParentPID'").CommandLine
+$VeeamJob = Get-VBRJob | ?{$ParentCMD -like "*"+$_.Id.ToString()+"*"}
+$JobName=$VeeamJob.name
 
 #This checks to see if the folder exists on the USB drive and if not creates it.
 
-$Path = Test-Path "$OffsiteDrive\Veeam_Offsite\$jobname"
-If(!($Path))
-{ New-Item -Name "$OffsiteDrive\Veeam_Offsite\$jobname"}
+$Path = Test-Path "$OffsiteDrive\Veeam_Offsite\$JobName"
+If (!($Path))
+{ New-Item -Name "$OffsiteDrive\Veeam_Offsite\$JobName"}
 
-#This performs the mirror. If it hits an error it will rety twice with 5 seconds between retries.
-Robocopy "$HomeDrive\Veeam\Backups\GFS\$jobname" "$OffsiteDrive\Veeam_Offsite\$jobname" /MIR /W:5 /R:2
+#This performs the mirror. If it hits an error it will retry twice with 5 seconds between retries.
+Robocopy "$HomeDrive\Veeam\Backups\GFS\$JobName" "$OffsiteDrive\Veeam_Offsite\$JobName" /MIR /W:5 /R:2
