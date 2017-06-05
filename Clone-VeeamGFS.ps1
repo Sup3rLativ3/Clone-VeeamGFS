@@ -22,9 +22,20 @@ param ( [string]$HomeDrive = 'K:',
         [string]$EventSource = "Veeam GFS Script"
 )
 
+#Allows us to use the Veeam cmdlets.
+TRY {
+        Add-PSSnapin -Name VeeamPSSnapIn -ErrorAction Stop -ErrorVariable SnapInError
+    }
+
+    CATCH {
+            # Write an event to event viewer advising the module is not installed.
+            Write-EventLog -LogName Application -Source $EventSource -EventId 101 -EntryType Error -Message "The activation of the Veeam SnapIn has failed. The script has been terminated and will not be successful unless this issue can be resolved. `r`n`n $SnapInError"
+            Exit
+           }
+
 # This checks to see if the event viewer source exists and if not it will create it.
 $EventSourceExists = Get-EventLog -list | Where-Object {$_.logdisplayname -eq "$EventSource"} 
-IF (!($EventSourceExists)) 
+IF (! $EventSourceExists) 
     {
         New-EventLog -LogName Application -Source $EventSource
     }
