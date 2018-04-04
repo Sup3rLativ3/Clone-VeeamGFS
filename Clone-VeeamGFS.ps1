@@ -21,6 +21,7 @@ param ( [string]$HomeDrive = '\\10.0.0.116\',
 		[string]$OffsiteDrive = 'O:',
         [string]$EventSource = "Veeam GFS Script"
 )
+start-transcript -Path R:\Shadow\Scripts\Veeam\Transcript.log
 
 Add-PSSnapin -Name VeeamPSSnapIn -ErrorAction SilentlyContinue
 
@@ -38,8 +39,8 @@ IF (!($EventSourceExists))
 
 $ParentPID = (Get-WmiObject Win32_Process -Filter "ProcessID='$PID'").parentprocessid.ToString()
 $ParentCMD = (Get-WmiObject Win32_Process -Filter "ProcessID='$ParentPID'").CommandLine
-#$VeeamJob = Get-VBRJob | ?{$ParentCMD -like "*"+$_.Id.ToString()+"*"}
-$veeamjob = get-vbrjob -name "server 2016 GFS"
+$VeeamJob = Get-VBRJob | ?{$ParentCMD -like "*"+$_.Id.ToString()+"*"}
+#$veeamjob = get-vbrjob -name "server 2016 GFS"
 $JobName=$VeeamJob.name
 
 #This checks to see if the folder exists on the USB drive and if not creates it.
@@ -49,7 +50,7 @@ If (!($Path))
 { New-Item -Name "$JobName" -Path "$OffsiteDrive\Veeam_Offsite\" -Type Directory }
 
 #This performs the mirror. If it hits an error it will retry twice with 5 seconds between retries.
-Robocopy "$HomeDrive\Veeam_GFS\$JobName" "$OffsiteDrive\Veeam_Offsite\$JobclsName" /MIR /W:5 /R:2
+Robocopy "$HomeDrive\Veeam_GFS\$JobName" "$OffsiteDrive\Veeam_Offsite\$JobName" /MIR /W:5 /R:2
 
 # This will check the exit code from RoboCopy and if it was not successful, write an error to event viewer under the application directory.
 # http://windowsitpro.com/powershell/q-capturing-robocopy-error-codes-powershell
